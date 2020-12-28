@@ -1,3 +1,6 @@
+from stock_paragraph import Registrator
+
+
 BASIC_NAMES = [
     'Владимир',
     'Александр',

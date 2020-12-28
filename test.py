@@ -1,1 +1,1 @@
-print(isinstance((1,2,3), tuple))
+print(float(1.22) - int(1))
