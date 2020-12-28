@@ -44,6 +44,8 @@ class AOobject:
                     break
                 except IndexError:
                     print("Нужно ввест номер из приведенного списка!")
+        else:
+            self.registrator = registrator
         if not reg_codes:
             print('Введите регистрационный код акций, которые покупаем')
             self.reg_codes = [get_input(re.compile(r'.+'), MSG_JUST_STRING_ASK, MSG_JUST_STRING_ERROR)]
@@ -57,22 +59,35 @@ class StockParagraph:
     PARAGRAPH_TOKEN = '#!stock_paragraph!#'
 
     def __init__(self, debug=False):
+        self.token_book = {}
         self.debug = debug
         if debug:
             self.stock_amount = str(random.randint(3, 15000))
         else:
             self.stock_amount = get_input(REGEX_STOCK_AMOUNT, MSG_STOCK_AMOUNT_ASK, MSG_STOCK_AMOUNT_ERROR)
         self.stock_amount_literally = num2text(int(self.stock_amount))
+        self.add({
+            '#!stock_amount!#': self.stock_amount,
+            '#!stock_amount_literally!#': self.stock_amount_literally
+            })
         self.stock_type_input()
         self.AO_input()
         self.AOreg_code_input()
         self.stock_price_input()
         self.stock_itogo_input()
         self.text = f'''               - {self.stock_amount} ({self.stock_amount_literally}) штук {self.stock_type} акций {self.AO.name}, регистрационный номер {self.AOreg_code}. Стоимость одной акции по Договору составляет {self.stock_price_rub} руб. {self.stock_price_kopeek} коп.'''
+        self.add({
+            '#!stock_type!#': self.stock_type,
+            '#!AOtype!#': self.AO.name,
+            '#!AOreg_code!#': self.AOreg_code,
+            '#!stock_itogo!#': str(self.stock_itogo),
+            '#!stock_itogo_literally!#': self.stock_itogo_literally,
+        })
 
     def stock_type_input(self):
         if self.debug:
             self.stock_type = random.choice(["обыкновенные","привилегированные"])
+            # self.add({'#!stock_type!#': self.stock_type})
             return
         print("Тип самих акций:\n1: обыкновенные\n2: привилегированные")
         print("Также можно так:\nпустая строка : обыкновенные\nстрока с чем-то : привилегированные")
@@ -84,10 +99,12 @@ class StockParagraph:
         else:
             stock_type = "привилегированные"
         self.stock_type = stock_type
+        # self.add({'#!stock_type!#': self.stock_type})
 
     def AO_input(self):
         if self.debug:
             self.AO = random.choice(AO_LIST)
+            # self.add({'#!AOtype!#': self.AO.name})
             self.customAO = False
             return
         print()
@@ -97,23 +114,28 @@ class StockParagraph:
         input_data = input("Либо номер из списка, либо название АО, которого нет.\n")
         try:
             self.AO = AO_LIST[int(input_data)]
+            # self.add({'#!AOtype!#': self.AO.name})
             self.customAO = False
         except ValueError:
             self.AO = AOobject()
+            # self.add({'#!AOtype!#': self.AO.name})
             self.customAO = True
 
     def AOreg_code_input(self):
         if self.debug:
             self.AOreg_code = random.choice(self.AO.reg_codes)
+            # self.add({'#!AOreg_code!#': self.AOreg_code})
             return
         while True:
             try:
                 if self.customAO:
                     self.AOreg_code = self.AO.reg_codes[0]
+                    # self.add({'#!AOreg_code!#': self.AOreg_code})
                     break
                 else:
                     AOreg_code_index = 0 if self.stock_type == "обыкновенные" else 1
                     self.AOreg_code = self.AO.reg_codes[AOreg_code_index]
+                    # self.add({'#!AOreg_code!#': self.AOreg_code})
                     break
             except IndexError:
                 print(f"У {self.AO.name} нет акций, типа {self.stock_type}\Повторите ввод")
@@ -130,6 +152,10 @@ class StockParagraph:
     def stock_itogo_input(self):
         self.stock_itogo = int(self.stock_price_float * int(self.stock_amount)) + 1
         self.stock_itogo_literally = num2text(int(self.stock_itogo))
+        # self.add({
+        #     '#!stock_itogo!#': str(self.stock_itogo),
+        #     '#!stock_itogo_literally!#': self.stock_itogo_literally,
+        #     })
         StockParagraph.itogo += self.stock_itogo
         StockParagraph.itogo_literally = num2text(StockParagraph.itogo)
         fill_data.add({
@@ -138,28 +164,35 @@ class StockParagraph:
             '#!final_price_kopeek!#': '0'
             })
 
+    def add(self, tokeninfo):
+        if isinstance(tokeninfo, dict):
+            for k, v in tokeninfo.items():
+                self.token_book[k] = v
+        elif (isinstance(tokeninfo, tuple) or isinstance(tokeninfo, list)) and len(tokeninfo) == 2:
+            key, value = tokeninfo
+            self.token_book[key] = value
 
 
 REGISTRATOR_LIST = [
     Registrator(
         registrator_name='НРК "РОСТ"',
-        registrator_docs=['anketa_rost.docx', 'rasp_rost.docx']
+        registrator_docs=['docs/anketa_rost.docx', 'docs/rasp_rost.docx']
         ),
     Registrator(
         registrator_name='ДРАГА',
-        registrator_docs=['anketa_draga.docx', 'rasp_draga.docx']
+        registrator_docs=['docs/anketa_draga.docx', 'docs/rasp_draga.docx']
         ),
     Registrator(
         registrator_name='СТАТУС',
-        registrator_docs=['anketa_status.docx', 'rasp_status.docx']
+        registrator_docs=['docs/anketa_status.docx', 'docs/rasp_status.docx']
         ),
     Registrator(
         registrator_name='ВТБ',
-        registrator_docs=['anketa_vtb.docx', 'rasp_vtb.docx']
+        registrator_docs=['docs/anketa_vtb.docx', 'docs/rasp_vtb.docx']
         ),
     Registrator(
         registrator_name='НОВЫЙ РЕГИСТРАТОР',
-        registrator_docs=['anketa_new_registrator.docx', 'rasp_new_registrator.docx']
+        registrator_docs=['docs/anketa_new_registrator.docx', 'docs/rasp_new_registrator.docx']
         ),
 ]
 

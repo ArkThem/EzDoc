@@ -217,8 +217,12 @@ class AdrIndex(fill_data):
         self.fill_fields()
 
     def fill_fields(self):
-        fill_data.add({"#!registration_index!#": self.index})
-        fill_data.add({f"#!registration_index{i}!#": x for i, x in enumerate(self.index)})
+        if self._type == 'registration_index':
+            fill_data.add({"#!registration_index!#": self.index})
+            fill_data.add({f"#!registration_index{i}!#": x for i, x in enumerate(self.index)})
+        elif self._type == 'fact_index':
+            fill_data.add({"#!fact_index!#": self.index})
+            fill_data.add({f"#!fact_index{i}!#": x for i, x in enumerate(self.index)})
 
     def fill_with_debug(self):
         self.index = ''
@@ -265,11 +269,15 @@ class JustString(fill_data):
     MESSAGES = {
         "kem_vidan": "Кем выдан паспорт.\nПросто строка, что введешь, то и вставит в документ.",
         "registration_adress": "Адрес регистрации.\nПросто строка, что введешь, то и вставит в документ",
+        'fact_adress': 'Адрес фактического проживания.\nЕсли пусто, то будет использован адрес регистрации',
+        "birth_place": "Место рождения акционера"
 
         }
     TYPE_TOKEN = {
         'kem_vidan': '#!kem_vidan!#',
-        'registration_adress': "#!registration_adress!#"
+        'registration_adress': "#!registration_adress!#",
+        'fact_adress': '#!fact_adress!#',
+        'birth_place': '#!birth_place!#'
     }
 
     def __init__(self, _type, *args, **kwargs):
@@ -288,8 +296,46 @@ class JustString(fill_data):
 
     def fill_with_debug(self):
         self.content = ""
-        for _ in range(random.randint(4, 12)):
-            for _ in range(random.randint(3, 10)):
-                self.content += random.choice("ЯЧСМИТЬБЮФЫВАПРОЛДЖЭЙЦЙУКЕН12334567890")
-            self.content += " "
-        fill_data.add({JustString.TYPE_TOKEN[self._type]: self.content})
+        if self._type == "kem_vidan" or self._type == 'registration_adress':
+            for _ in range(random.randint(4, 12)):
+                for _ in range(random.randint(3, 10)):
+                    self.content += random.choice("ЯЧСМИТЬБЮФЫВАПРОЛДЖЭЙЦЙУКЕН12334567890")
+                self.content += " "
+            fill_data.add({JustString.TYPE_TOKEN[self._type]: self.content})
+        else:
+            for _ in range(random.randint(1, 4)):
+                for _ in range(random.randint(3, 7)):
+                    self.content += random.choice("ЯЧСМИТЬБЮФЫВАПРОЛДЖЭЙЦЙУКЕН12334567890")
+                self.content += " "
+            fill_data.add({JustString.TYPE_TOKEN[self._type]: self.content})
+
+
+class Telephone(fill_data):
+    def __init__(self, *args, **kwargs):
+        self.exact = True
+        self.msg_before_input = "Номер телефона акционера\nПример: 89991234567"
+        # print(AdrIndex.MESSAGES[_type])
+        print(self.msg_before_input)
+        super().__init__(*args, **kwargs)
+
+        if self.filled_with_debug:
+            return
+        self.index = "######"
+        if not re.match(
+            SeriaNomer.REGEX_ADRESS_INDEX_TEMPLATE,
+            self.source
+                ):
+            self.decline_input()
+            return
+        self.number = self.source
+        self.fill_fields()
+
+    def fill_fields(self):
+        fill_data.add({"#!telephone!#": self.number})
+        fill_data.add({f"#!telephone{i}!#": x for i, x in enumerate(self.number)})
+
+    def fill_with_debug(self):
+        self.number = ''
+        for _ in range(11):
+            self.number += str(random.randint(0, 10))
+        self.fill_fields()

@@ -13,12 +13,16 @@ SAVE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop', "Д
 
 client_fio = FIO(debug=DEBUG)
 client_birth_date = Date(_type='2', debug=DEBUG)
+client_birth_place = JustString(_type='birth_place', debug=DEBUG)
 clien_seria_nomer = SeriaNomer(debug=DEBUG)
 client_data_vidachi = Date(_type='1', debug=DEBUG)
 client_kem_vidan = JustString(_type='kem_vidan', debug=DEBUG)
 client_kod_kem_vidan = FacilityCode(debug=DEBUG)
 client_registration_index = AdrIndex(_type='1', debug=DEBUG)
 cliend_registration_adress = JustString(_type='registration_adress', debug=DEBUG)
+client_fact_index = AdrIndex(_type='2', debug=DEBUG)
+client_fact_adress = JustString(_type='fact_adress', debug=DEBUG)
+client_telephone = Telephone(debug=DEBUG)
 
 paragraph_amount = int(get_input(
     re.compile(r"^\d"),
@@ -43,8 +47,18 @@ del raspiska
 print('Проверь совпадение пола! Слова по типу: зарегестрирован, зарегестрирована...\n')
 input("Программу можно закрыть, расписка и ДКП созданы. Сделать анкету и распоряжение для регистратора?\nНажмите Enter для продолжения.")
 
+for stock_variant in paragraphs:
+    current_case_dict = merge_two_dicts(fill_data.token_book, stock_variant.token_book)
+    anketa_path, rasp_path = stock_variant.AO.registrator.documents
+    anketa = docx.Document(anketa_path)
+    doc_dict_replace(anketa, current_case_dict)
+    anketa.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} АНКЕТА.docx"))
+    del anketa
 
-
+    rasp = docx.Document(rasp_path)
+    doc_dict_replace(rasp, current_case_dict)
+    rasp.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} РАСПОРЯЖЕНИЕ.docx"))
+    del rasp
 
 if DEBUG:
     for k, v in fill_data.token_book.items():
