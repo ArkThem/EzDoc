@@ -1,4 +1,5 @@
 from datetime import date
+import docx
 import re
 
 
@@ -83,10 +84,49 @@ def put_substring(source_str, insert_str, pos):
     return source_str[:pos]+insert_str+source_str[pos:]
 
 
+def insert_before_token(docx_obj, token, insert_str):
+    for par in docx_obj.paragraphs:
+        if '#!stock_paragraph!#' in par.text:
+            prior_paragraph = par.insert_paragraph_before('#!stock_paragraph!#')
+            prior_paragraph.text = insert_str
+    for par in docx_obj.paragraphs:
+        if '#!stock_paragraph!#' in par.text:
+            par.text = ""
+
+
 def get_input(regex, message_ask="", message_error=""):
     while True:
-        input_data = input(message_ask)
+        input_data = input(message_ask+'\n')
         if re.match(regex, input_data):
             return input_data
         else:
-            print(message_error)
+            print(message_error+'\n')
+
+
+def doc_replace_token(doc_obj, token, replace_string, style=None):
+    for p in doc_obj.paragraphs:
+        if token in p.text:
+            # print(token)
+            p.text = p.text.replace(token, replace_string)
+            if style:
+                p.style = style
+    for table in doc_obj.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                doc_replace_token(cell, token,  replace_string)
+
+
+def doc_dict_replace(doc_obj, replace_dict, style=None, bar=None):
+    for p in doc_obj.paragraphs:
+        for token, value in replace_dict.items():
+            if token in p.text:
+                # print(token)
+                p.text = p.text.replace(token, replace_dict[token])
+                if style:
+                    p.style = style
+        if bar:
+            bar()
+    for table in doc_obj.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                doc_dict_replace(cell, replace_dict)

@@ -1,7 +1,9 @@
 from num2string import num2text
 import re
+import random
+from fill_data_class import fill_data
 from utils import *
-from consts import REGISTRATOR_LIST, AO_LIST
+
 
 MSG_JUST_STRING_ASK = 'Обычная строка, введите хоть что-то.'
 MSG_JUST_STRING_ERROR = 'Нужно ввести хоть что-нибудь.'
@@ -28,6 +30,8 @@ class AOobject:
         if not AOtype:
             print('Введите название АО')
             self.name = get_input(re.compile(r'.+'), MSG_JUST_STRING_ASK, MSG_JUST_STRING_ERROR)
+        else:
+            self.name = AOtype
         if not registrator:
             while True:
                 print("Выберите регистратор для данного из списка")
@@ -43,22 +47,36 @@ class AOobject:
         if not reg_codes:
             print('Введите регистрационный код акций, которые покупаем')
             self.reg_codes = [get_input(re.compile(r'.+'), MSG_JUST_STRING_ASK, MSG_JUST_STRING_ERROR)]
+        else:
+            self.reg_codes = reg_codes
 
 
 class StockParagraph:
-    def __init__(self):
-        self.stock_amount = get_input(REGEX_STOCK_AMOUNT, MSG_STOCK_AMOUNT_ASK, MSG_STOCK_AMOUNT_ERROR)
+    itogo = 0
+    itogo_literally = ""
+    PARAGRAPH_TOKEN = '#!stock_paragraph!#'
+
+    def __init__(self, debug=False):
+        self.debug = debug
+        if debug:
+            self.stock_amount = str(random.randint(3, 15000))
+        else:
+            self.stock_amount = get_input(REGEX_STOCK_AMOUNT, MSG_STOCK_AMOUNT_ASK, MSG_STOCK_AMOUNT_ERROR)
         self.stock_amount_literally = num2text(int(self.stock_amount))
         self.stock_type_input()
         self.AO_input()
         self.AOreg_code_input()
         self.stock_price_input()
         self.stock_itogo_input()
+        self.text = f'''               - {self.stock_amount} ({self.stock_amount_literally}) штук {self.stock_type} акций {self.AO.name}, регистрационный номер {self.AOreg_code}. Стоимость одной акции по Договору составляет {self.stock_price_rub} руб. {self.stock_price_kopeek} коп.'''
 
     def stock_type_input(self):
+        if self.debug:
+            self.stock_type = random.choice(["обыкновенные","привилегированные"])
+            return
         print("Тип самих акций:\n1: обыкновенные\n2: привилегированные")
         print("Также можно так:\nпустая строка : обыкновенные\nстрока с чем-то : привилегированные")
-        stock_type = input()
+        stock_type = input("\n")
         if stock_type == '1' or stock_type == "":
             stock_type = "обыкновенные"
         elif stock_type == '2':
@@ -68,11 +86,15 @@ class StockParagraph:
         self.stock_type = stock_type
 
     def AO_input(self):
+        if self.debug:
+            self.AO = random.choice(AO_LIST)
+            self.customAO = False
+            return
         print()
         for i, AO in enumerate(AO_LIST, 1):
             print(f"{i} : {AO.name}")
 
-        input_data = input("Либо номер из списка, либо название АО, которого нет.")
+        input_data = input("Либо номер из списка, либо название АО, которого нет.\n")
         try:
             self.AO = AO_LIST[int(input_data)]
             self.customAO = False
@@ -81,6 +103,9 @@ class StockParagraph:
             self.customAO = True
 
     def AOreg_code_input(self):
+        if self.debug:
+            self.AOreg_code = random.choice(self.AO.reg_codes)
+            return
         while True:
             try:
                 if self.customAO:
@@ -94,12 +119,109 @@ class StockParagraph:
                 print(f"У {self.AO.name} нет акций, типа {self.stock_type}\Повторите ввод")
 
     def stock_price_input(self):
-        self.stock_price_str = get_input(REGEX_STOCK_PRICE, MSG_STOCK_PRICE_ACK, MSG_STOCK_PRICE_ERROR)
+        if self.debug:
+            self.stock_price_str = str(round(random.random(), 2)*float(random.randint(1, 10000)))
+        else:
+            self.stock_price_str = get_input(REGEX_STOCK_PRICE, MSG_STOCK_PRICE_ACK, MSG_STOCK_PRICE_ERROR)
         self.stock_price_float = float(self.stock_price_str)
         self.stock_price_rub = int(self.stock_price_float)
-        self.stock_itogo = float()
         self.stock_price_kopeek = int(100*(self.stock_price_float - self.stock_price_rub))
 
     def stock_itogo_input(self):
-        self.stock_itogo = int(self.stock_price_float * self.stock_amount) + 1
+        self.stock_itogo = int(self.stock_price_float * int(self.stock_amount)) + 1
         self.stock_itogo_literally = num2text(int(self.stock_itogo))
+        StockParagraph.itogo += self.stock_itogo
+        StockParagraph.itogo_literally = num2text(StockParagraph.itogo)
+        fill_data.add({
+            '#!final_price_rub!#': str(StockParagraph.itogo),
+            '#!final_price_literally!#': StockParagraph.itogo_literally,
+            '#!final_price_kopeek!#': '0'
+            })
+
+
+
+REGISTRATOR_LIST = [
+    Registrator(
+        registrator_name='НРК "РОСТ"',
+        registrator_docs=['anketa_rost.docx', 'rasp_rost.docx']
+        ),
+    Registrator(
+        registrator_name='ДРАГА',
+        registrator_docs=['anketa_draga.docx', 'rasp_draga.docx']
+        ),
+    Registrator(
+        registrator_name='СТАТУС',
+        registrator_docs=['anketa_status.docx', 'rasp_status.docx']
+        ),
+    Registrator(
+        registrator_name='ВТБ',
+        registrator_docs=['anketa_vtb.docx', 'rasp_vtb.docx']
+        ),
+    Registrator(
+        registrator_name='НОВЫЙ РЕГИСТРАТОР',
+        registrator_docs=['anketa_new_registrator.docx', 'rasp_new_registrator.docx']
+        ),
+]
+
+AO_LIST = [
+    # 1
+    AOobject(
+        AOtype='Акционерноe общество "ЛОМО"',
+        registrator=REGISTRATOR_LIST[1],
+        reg_codes=['1-02-00074-A', "2-02-00074-A"]
+    ),
+    # 2
+    AOobject(
+        AOtype='Публичное акционерное общество "Ростелеком""',
+        registrator=REGISTRATOR_LIST[3],
+        reg_codes=['1-01-00124-A', '2-01-00124-A']
+    ),
+    # 3
+    AOobject(
+        AOtype='Публичное акционерное общество "Горно-металлургическая компания "Норильский никель"',
+        registrator=REGISTRATOR_LIST[0],
+        reg_codes=['1-01-40155-F']
+    ),
+    # 4
+    AOobject(
+        AOtype='Публичное акционерное общество "Полюс"',
+        registrator=REGISTRATOR_LIST[0],
+        reg_codes=['1-01-55192-E']
+    ),
+    # 5
+    AOobject(
+        AOtype='Публичное акционерное общество "Газпром"',
+        registrator=REGISTRATOR_LIST[1],
+        reg_codes=['1-02-00028-A']
+    ),
+    # 6
+    AOobject(
+        AOtype='Публичное акционерное общество "Сбербанк России"',
+        registrator=REGISTRATOR_LIST[2],
+        reg_codes=['1-03-01481-B', '2-03-01481-B']
+    ),
+    # 7
+    AOobject(
+        AOtype='Ленское золотодобывающее публичное акционерное общество "Лензолото"',
+        registrator=REGISTRATOR_LIST[0],
+        reg_codes=['1-02-40433-N', '2-02-40433-N']
+    ),
+    # 8
+    AOobject(
+        AOtype='Публичное акционерное общество "Россети Ленэнерго"',
+        registrator=REGISTRATOR_LIST[0],
+        reg_codes=['1-01-00073-A', '2-01-00073-A']
+    ),
+    # 9
+    AOobject(
+        AOtype='Публичное акционерное общество "Территориальная генерирующая компания №1"',
+        registrator=REGISTRATOR_LIST[1],
+        reg_codes=['1-01-03388-D']
+    ),
+    # 10
+    AOobject(
+        AOtype='Публичное акционерное общество энергетики и электрификации "Мосэнерго"',
+        registrator=REGISTRATOR_LIST[1],
+        reg_codes=['1-01-00085-A']
+    ),
+]

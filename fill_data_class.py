@@ -1,5 +1,6 @@
 import re
 from utils import *
+from consts import *
 import random
 
 
@@ -28,7 +29,7 @@ class fill_data:
     @staticmethod
     def add(tokeninfo):
         if isinstance(tokeninfo, dict):
-            for k, v in tokenbook.items():
+            for k, v in tokeninfo.items():
                 fill_data.token_book[k] = v
         elif (isinstance(tokeninfo, tuple) or isinstance(tokeninfo, list)) and len(tokeninfo) == 2:
             key, value = tokeninfo
@@ -53,12 +54,13 @@ class fill_data:
 
 class FIO(fill_data):
     REGEX_FIO_TEMPLATE = re.compile(r'^[А-я]{3,}\s+[А-я]{3,}\s+[А-я]{3,}$')
-    REGEX_FIO_PART_TEMPLATE = re.complie(r'[А-я]{3,}')
+    REGEX_FIO_PART_TEMPLATE = re.compile(r'[А-я]{3,}')
 
     def __init__(self, *args, **kwargs):
         self.exact = True
         self.msg_before_input = f'''Введите полное ФИО.
          Пример: Иванов Иван Иванович\n'''
+        print(self.msg_before_input)
         super().__init__(*args, **kwargs)
 
         if self.filled_with_debug:
@@ -97,6 +99,7 @@ class SeriaNomer(fill_data):
         self.exact = True
         self.msg_before_input = f'''Введите серию и номер паспорта.
         Пример: 1234123456, 1234 123456\n'''
+        print(self.msg_before_input)
         super().__init__(*args, **kwargs)
 
         if self.filled_with_debug:
@@ -114,13 +117,13 @@ class SeriaNomer(fill_data):
     def fill_fields(self):
         fill_data.add({
             "#!seria_nomer!#": self.seria_nomer,
-            "#!seria_nomer0!#": self.seria_nomer[:4],
-            "#!seria_nomer1!#": self.seria_nomer[4:],
+            "#!seria_nomer_0!#": self.seria_nomer[:4],
+            "#!seria_nomer_1!#": self.seria_nomer[4:],
         })
-        fill_data.add({f"#!seria_nomer_{i}": x for i, x in enumerate(self.seria_nomer)})
+        fill_data.add({f"#!seria_nomer{i}": x for i, x in enumerate(self.seria_nomer)})
 
     def fill_with_debug(self):
-        self.seria_nomer = "".join([str(random.randint(0, 10)) for i in range(10)])
+        self.seria_nomer = "".join([str(random.randint(0, 9)) for i in range(10)])
         self.fill_fields()
 
 
@@ -143,7 +146,9 @@ class Date(fill_data):
         2 : Date of birth
         '''
         self.msg_before_input = Date.MESSAGES[_type]
+        print(Date.MESSAGES[_type])
         self._type = _type
+        self._token = Date.TYPE_TOKEN[_type]
         super().__init__(*args, **kwargs)
 
         if self.filled_with_debug:
@@ -161,7 +166,7 @@ class Date(fill_data):
         self.fill_fields()
 
     def fill_fields(self):
-        for i, number in enumerate(self.numbers[:1]):
+        for i, number in enumerate(self.date_numbers[:1]):
             if len(number) < 2:
                 self.date_numbers[i] = "0" + number
         if len(self.date_numbers[2]) < 4:
@@ -173,9 +178,9 @@ class Date(fill_data):
             self.date_numbers[2] = str(year)
         fill_data.add({Date.TYPE_TOKEN[self._type]: '.'.join(self.date_numbers)})
         # Посимвольно добавить дату с токенами birth_date0,1,2... или data_vidachi0,1,2 и тд
-        fill_data.add({put_substring(Date.TYPE_TOKEN[self._token], str(i), Date.TYPE_TOKEN[self._type].find("!#")): x for i, x in enumerate(".".join(self.date_numbers))})
+        fill_data.add({put_substring(Date.TYPE_TOKEN[self._type], str(i), Date.TYPE_TOKEN[self._type].find("!#")): x for i, x in enumerate(".".join(self.date_numbers))})
 
-    def filled_with_debug(self):
+    def fill_with_debug(self):
         self.date_numbers = [
             str(random.randint(1, 32)),
             str(random.randint(1, 13)),
@@ -195,6 +200,8 @@ class AdrIndex(fill_data):
         self.exact = True
         self._type = _type
         self.msg_before_input = AdrIndex.MESSAGES[_type]
+        # print(AdrIndex.MESSAGES[_type])
+        print(self.msg_before_input)
         super().__init__(*args, **kwargs)
 
         if self.filled_with_debug:
@@ -207,10 +214,11 @@ class AdrIndex(fill_data):
             self.decline_input()
             return
         self.index = self.source
+        self.fill_fields()
 
     def fill_fields(self):
         fill_data.add({"#!registration_index!#": self.index})
-        fill_data.add({f"#!registration_index{i}!#": x for x in self.index})
+        fill_data.add({f"#!registration_index{i}!#": x for i, x in enumerate(self.index)})
 
     def fill_with_debug(self):
         self.index = ''
@@ -224,6 +232,8 @@ class FacilityCode(fill_data):
 
     def __init__(self, *args, **kwargs):
         self.exact = True
+        self.msg_before_input = f"""Код подразделения, где выдан паспорт\nПример: 730-123"""
+        print(self.msg_before_input)
         super().__init__(*args, **kwargs)
 
         if self.filled_with_debug:
@@ -239,7 +249,7 @@ class FacilityCode(fill_data):
 
     def fill_fields(self):
         fill_data.add({'#!kod_kem_vidan!#': self.code})
-        fill_data.add({f'#!kod_kem_vidan{i}!#': x for x in self.code})
+        fill_data.add({f'#!kod_kem_vidan{i}!#': x for i, x in enumerate(self.code)})
 
     def fill_with_debug(self):
         self.code = ""
@@ -247,6 +257,7 @@ class FacilityCode(fill_data):
             for _ in range(3):
                 self.code += str(random.randint(0, 10))
             self.code += "-"
+        self.code = self.code[:7]
         self.fill_fields()
 
 
@@ -265,10 +276,12 @@ class JustString(fill_data):
         self.exact = False
         self._type = _type
         self.msg_before_input = JustString.MESSAGES[_type]
+        print(JustString.MESSAGES[_type])
         super().__init__(*args, **kwargs)
         if self.filled_with_debug:
             return
         self.content = self.source
+        self.fill_fields()
 
     def fill_fields(self):
         fill_data.add({JustString.TYPE_TOKEN[self._type]: self.content})
@@ -277,6 +290,6 @@ class JustString(fill_data):
         self.content = ""
         for _ in range(random.randint(4, 12)):
             for _ in range(random.randint(3, 10)):
-                self.content += random.choice("ЯЧСМИТЬБЮФЫВАПРОЛДЖЭЙЦЙУКЕН12334567890)
+                self.content += random.choice("ЯЧСМИТЬБЮФЫВАПРОЛДЖЭЙЦЙУКЕН12334567890")
             self.content += " "
         fill_data.add({JustString.TYPE_TOKEN[self._type]: self.content})

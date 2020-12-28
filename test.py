@@ -1,1 +1,3 @@
-print(float(1.22) - int(1))
+a = int(1)
+
+print(f"{a}")
