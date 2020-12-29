@@ -79,6 +79,14 @@ def get_date(variant=0):
         return f'"{day}" {month_literally[month]} {year}г.'
     pass
 
+def get_class_input(class_name, *args, **kwargs):
+    while True:
+        try:
+            obj = class_name(*args, **kwargs)
+            return obj
+        except TypeError:
+            continue
+
 
 def put_substring(source_str, insert_str, pos):
     return source_str[:pos]+insert_str+source_str[pos:]

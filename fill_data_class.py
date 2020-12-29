@@ -1,6 +1,8 @@
 import re
 from utils import *
 from consts import *
+import docx
+from docx.shared import Pt
 import random
 
 
@@ -49,11 +51,12 @@ class fill_data:
 
     def decline_input(self):
         print(f"Данные введены неверно. {self.source}")
+        # self.__init__(debug=self._debug)
         raise TypeError
 
 
 class FIO(fill_data):
-    REGEX_FIO_TEMPLATE = re.compile(r'^[А-я]{3,}\s+[А-я]{3,}\s+[А-я]{3,}$')
+    REGEX_FIO_TEMPLATE = re.compile(r'^[А-яё]{3,}\s+[А-яё]{3,}\s+[А-яё]{3,}$')
     REGEX_FIO_PART_TEMPLATE = re.compile(r'[А-я]{3,}')
 
     def __init__(self, *args, **kwargs):
@@ -120,7 +123,7 @@ class SeriaNomer(fill_data):
             "#!seria_nomer_0!#": self.seria_nomer[:4],
             "#!seria_nomer_1!#": self.seria_nomer[4:],
         })
-        fill_data.add({f"#!seria_nomer{i}": x for i, x in enumerate(self.seria_nomer)})
+        fill_data.add({f"#!seria_nomer{i}!#": x for i, x in enumerate(self.seria_nomer)})
 
     def fill_with_debug(self):
         self.seria_nomer = "".join([str(random.randint(0, 9)) for i in range(10)])
@@ -129,10 +132,10 @@ class SeriaNomer(fill_data):
 
 class Date(fill_data):
     REGEX_DIGIT_FROM_DATE_TEMPLATE = re.compile(r'\d+')
-    REGEX_DATE_TEMPLATE = re.compile(r'\d+\D\d+\D\d+$')
+    REGEX_DATE_TEMPLATE = re.compile(r'\d{2}\D\d{2}\D\d{4}$')
     MESSAGES = {
-        "1": "Введите дату выдачи паспорта.\nПример: 12.12.2012 или даже так 2.6.94",
-        "2": "Введите дату рождения.\nПример: 12.12.2012 или даже так 2.6.94",
+        "1": "Введите дату выдачи паспорта.\nПример: 12.12.2012",
+        "2": "Введите дату рождения.\nПример: 12.12.2012",
     }
     TYPE_TOKEN = {
         '1': '#!data_vidachi!#',
@@ -190,6 +193,7 @@ class Date(fill_data):
 
 
 class AdrIndex(fill_data):
+    filled_data = {}
     MESSAGES = {
         '1': 'Индекс регистрации.\nПример: 123987',
         '2': 'Индекс фактического места проживания.\nПример: 123987\nЕсли пусто, то будет записан индекс регистрации',
@@ -208,21 +212,27 @@ class AdrIndex(fill_data):
             return
         self.index = "######"
         if not re.match(
-            SeriaNomer.REGEX_ADRESS_INDEX_TEMPLATE,
+            AdrIndex.REGEX_ADRESS_INDEX_TEMPLATE,
             self.source
                 ):
-            self.decline_input()
-            return
+            if AdrIndex.filled_data.get('registration_index'):
+                self.source = AdrIndex.filled_data.get('registration_index')
+            else:
+                self.decline_input()
+                return
         self.index = self.source
         self.fill_fields()
 
     def fill_fields(self):
-        if self._type == 'registration_index':
+        if self._type == '1':
             fill_data.add({"#!registration_index!#": self.index})
             fill_data.add({f"#!registration_index{i}!#": x for i, x in enumerate(self.index)})
-        elif self._type == 'fact_index':
+            AdrIndex.filled_data['registration_index'] = self.index
+        elif self._type == '2':
+            # print('wgineriogneriogneriopgnioerngoierngierngioernguierni')
             fill_data.add({"#!fact_index!#": self.index})
             fill_data.add({f"#!fact_index{i}!#": x for i, x in enumerate(self.index)})
+            AdrIndex.filled_data['fact_index'] = self.index
 
     def fill_with_debug(self):
         self.index = ''
@@ -244,12 +254,13 @@ class FacilityCode(fill_data):
             return
         self.code = "###-###"
         if not re.match(
-            SeriaNomer.REGEX_ADRESS_INDEX_TEMPLATE,
+            FacilityCode.REGEX_FACILITY_CODE_TEMPLATE,
             self.source
                 ):
             self.decline_input()
             return
         self.code = self.source
+        self.fill_fields()
 
     def fill_fields(self):
         fill_data.add({'#!kod_kem_vidan!#': self.code})
@@ -279,6 +290,7 @@ class JustString(fill_data):
         'fact_adress': '#!fact_adress!#',
         'birth_place': '#!birth_place!#'
     }
+    filled_data = {}
 
     def __init__(self, _type, *args, **kwargs):
         self.exact = False
@@ -288,11 +300,17 @@ class JustString(fill_data):
         super().__init__(*args, **kwargs)
         if self.filled_with_debug:
             return
+        if self.source == "":
+            if JustString.filled_data.get('registration_adress'):
+                self.source = JustString.filled_data.get('registration_adress')
+            else:
+                self.decline_input()
         self.content = self.source
         self.fill_fields()
 
     def fill_fields(self):
         fill_data.add({JustString.TYPE_TOKEN[self._type]: self.content})
+        JustString.filled_data[self._type] = self.content
 
     def fill_with_debug(self):
         self.content = ""
@@ -311,6 +329,7 @@ class JustString(fill_data):
 
 
 class Telephone(fill_data):
+    REGEX_TELEPHONE_TEMPLATE = re.compile(r'\d{11}')
     def __init__(self, *args, **kwargs):
         self.exact = True
         self.msg_before_input = "Номер телефона акционера\nПример: 89991234567"
@@ -322,7 +341,7 @@ class Telephone(fill_data):
             return
         self.index = "######"
         if not re.match(
-            SeriaNomer.REGEX_ADRESS_INDEX_TEMPLATE,
+            Telephone.REGEX_TELEPHONE_TEMPLATE,
             self.source
                 ):
             self.decline_input()

@@ -1,28 +1,42 @@
 from stock_paragraph import *
 from fill_data_class import *
 from functools import reduce
+from alive_progress import alive_bar
 from utils import *
 import re
 import os
 import docx
+from docx.shared import Pt
 
 
-DEBUG = True
+DEBUG = False
 SAVE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop', "Документы из программы")
 
 
-client_fio = FIO(debug=DEBUG)
-client_birth_date = Date(_type='2', debug=DEBUG)
-client_birth_place = JustString(_type='birth_place', debug=DEBUG)
-clien_seria_nomer = SeriaNomer(debug=DEBUG)
-client_data_vidachi = Date(_type='1', debug=DEBUG)
-client_kem_vidan = JustString(_type='kem_vidan', debug=DEBUG)
-client_kod_kem_vidan = FacilityCode(debug=DEBUG)
-client_registration_index = AdrIndex(_type='1', debug=DEBUG)
-cliend_registration_adress = JustString(_type='registration_adress', debug=DEBUG)
-client_fact_index = AdrIndex(_type='2', debug=DEBUG)
-client_fact_adress = JustString(_type='fact_adress', debug=DEBUG)
-client_telephone = Telephone(debug=DEBUG)
+client_fio = get_class_input(FIO, debug=DEBUG)
+print()
+client_birth_date = get_class_input(Date, _type='2', debug=DEBUG)
+print()
+client_birth_place = get_class_input(JustString, _type='birth_place', debug=DEBUG)
+print()
+clien_seria_nomer = get_class_input(SeriaNomer, debug=DEBUG)
+print()
+client_data_vidachi = get_class_input(Date, _type='1', debug=DEBUG)
+print()
+client_kem_vidan = get_class_input(JustString, _type='kem_vidan', debug=DEBUG)
+print()
+client_kod_kem_vidan = get_class_input(FacilityCode, debug=DEBUG)
+print()
+client_registration_index = get_class_input(AdrIndex, _type='1', debug=DEBUG)
+print()
+cliend_registration_adress = get_class_input(JustString, _type='registration_adress', debug=DEBUG)
+print()
+client_fact_index = get_class_input(AdrIndex, _type='2', debug=DEBUG)
+print()
+client_fact_adress = get_class_input(JustString, _type='fact_adress', debug=DEBUG)
+print()
+client_telephone = get_class_input(Telephone, debug=DEBUG)
+print()
 
 paragraph_amount = int(get_input(
     re.compile(r"^\d"),
@@ -50,15 +64,37 @@ input("Программу можно закрыть, расписка и ДКП 
 for stock_variant in paragraphs:
     current_case_dict = merge_two_dicts(fill_data.token_book, stock_variant.token_book)
     anketa_path, rasp_path = stock_variant.AO.registrator.documents
+    reg_name = stock_variant.AO.code_name
+    font_settings = stock_variant.AO.registrator.font_parameters
+
+
     anketa = docx.Document(anketa_path)
-    doc_dict_replace(anketa, current_case_dict)
-    anketa.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} АНКЕТА.docx"))
+    style_anketa = anketa.styles['Normal']
+    font_anketa = style_anketa.font
+    font_anketa.name = font_settings[0]
+    font_anketa.size = font_settings[1]
+    font_anketa.bold = font_settings[2]
+
+    with alive_bar(len(anketa.paragraphs)) as bar_anketa:
+        doc_dict_replace(anketa, current_case_dict, style=style_anketa, bar=bar_anketa)
+    anketa.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} АНКЕТА {reg_name}.docx"))
     del anketa
+    del style_anketa
+    del font_anketa
 
     rasp = docx.Document(rasp_path)
-    doc_dict_replace(rasp, current_case_dict)
-    rasp.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} РАСПОРЯЖЕНИЕ.docx"))
+    style_rasp = rasp.styles['Normal']
+    font_rasp = style_rasp.font
+    font_rasp.name = font_settings[0]
+    font_rasp.size = font_settings[1]
+    font_rasp.bold = font_settings[2]
+    with alive_bar(len(rasp.paragraphs)) as bar_raspor:
+        doc_dict_replace(rasp, current_case_dict, style=style_rasp, bar=bar_raspor)
+
+    rasp.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} РАСПОРЯЖЕНИЕ {reg_name}.docx"))
     del rasp
+    del style_rasp
+    del font_rasp
 
 if DEBUG:
     for k, v in fill_data.token_book.items():

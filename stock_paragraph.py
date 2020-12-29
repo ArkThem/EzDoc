@@ -2,6 +2,8 @@ from num2string import num2text
 import re
 import random
 from fill_data_class import fill_data
+import docx
+from docx.shared import Pt
 from utils import *
 
 
@@ -20,13 +22,22 @@ MSG_STOCK_TYPE = "Какого типа акции покупаем?"
 
 
 class Registrator:
-    def __init__(self, registrator_name, registrator_docs):
+    def __init__(
+            self,
+            registrator_name,
+            registrator_docs,
+            code_name="",
+            font_parameters=None
+            ):
         self.name = registrator_name
         self.documents = registrator_docs
+        self.code_name = code_name
+        self.font_parameters = font_parameters  # (font_name, Pt(X), is_bold)
 
 
 class AOobject:
-    def __init__(self, AOtype=None, registrator=None, reg_codes=None):
+    def __init__(self, AOtype=None, registrator=None, reg_codes=None, code_name=None):
+        # print(code_name)
         if not AOtype:
             print('Введите название АО')
             self.name = get_input(re.compile(r'.+'), MSG_JUST_STRING_ASK, MSG_JUST_STRING_ERROR)
@@ -51,7 +62,11 @@ class AOobject:
             self.reg_codes = [get_input(re.compile(r'.+'), MSG_JUST_STRING_ASK, MSG_JUST_STRING_ERROR)]
         else:
             self.reg_codes = reg_codes
-
+        if not code_name:
+            print('Введите короткое название АО.\nПример: ломо, рао, ростелеком и тд...')
+            self.code_name = get_input(re.compile(r'.+'), MSG_JUST_STRING_ASK, MSG_JUST_STRING_ERROR)
+        else:
+            self.code_name = code_name
 
 class StockParagraph:
     itogo = 0
@@ -117,7 +132,7 @@ class StockParagraph:
             # self.add({'#!AOtype!#': self.AO.name})
             self.customAO = False
         except ValueError:
-            self.AO = AOobject()
+            self.AO = AOobject(AOtype=input_data)
             # self.add({'#!AOtype!#': self.AO.name})
             self.customAO = True
 
@@ -176,23 +191,33 @@ class StockParagraph:
 REGISTRATOR_LIST = [
     Registrator(
         registrator_name='НРК "РОСТ"',
-        registrator_docs=['docs/anketa_rost.docx', 'docs/rasp_rost.docx']
+        registrator_docs=['docs/anketa_rost.docx', 'docs/rasp_rost.docx'],
+        code_name="РОСТ",
+        font_parameters=('Arial', Pt(7), False)
         ),
     Registrator(
         registrator_name='ДРАГА',
-        registrator_docs=['docs/anketa_draga.docx', 'docs/rasp_draga.docx']
+        registrator_docs=['docs/anketa_draga.docx', 'docs/rasp_draga.docx'],
+        code_name="ДРАГА",
+        font_parameters=('Arial', Pt(9), True)
         ),
     Registrator(
         registrator_name='СТАТУС',
-        registrator_docs=['docs/anketa_status.docx', 'docs/rasp_status.docx']
+        registrator_docs=['docs/anketa_status.docx', 'docs/rasp_status.docx'],
+        code_name="СТАТУС",
+        font_parameters=('Arial', Pt(10), False)
         ),
     Registrator(
         registrator_name='ВТБ',
-        registrator_docs=['docs/anketa_vtb.docx', 'docs/rasp_vtb.docx']
+        registrator_docs=['docs/anketa_vtb.docx', 'docs/rasp_vtb.docx'],
+        code_name="ВТБ",
+        font_parameters=('Arial', Pt(7), False)
         ),
     Registrator(
         registrator_name='НОВЫЙ РЕГИСТРАТОР',
-        registrator_docs=['docs/anketa_new_registrator.docx', 'docs/rasp_new_registrator.docx']
+        registrator_docs=['docs/anketa_new_registrator.docx', 'docs/rasp_new_registrator.docx'],
+        code_name="НОВЫЙ РЕГИСТРАТОР",
+        font_parameters=('Arial', Pt(10), False)
         ),
 ]
 
@@ -201,60 +226,70 @@ AO_LIST = [
     AOobject(
         AOtype='Акционерноe общество "ЛОМО"',
         registrator=REGISTRATOR_LIST[1],
-        reg_codes=['1-02-00074-A', "2-02-00074-A"]
+        reg_codes=['1-02-00074-A', "2-02-00074-A"],
+        code_name='ломо'
     ),
     # 2
     AOobject(
         AOtype='Публичное акционерное общество "Ростелеком""',
         registrator=REGISTRATOR_LIST[3],
-        reg_codes=['1-01-00124-A', '2-01-00124-A']
+        reg_codes=['1-01-00124-A', '2-01-00124-A'],
+        code_name='ростелеком'
     ),
     # 3
     AOobject(
         AOtype='Публичное акционерное общество "Горно-металлургическая компания "Норильский никель"',
         registrator=REGISTRATOR_LIST[0],
-        reg_codes=['1-01-40155-F']
+        reg_codes=['1-01-40155-F'],
+        code_name='гмк'
     ),
     # 4
     AOobject(
         AOtype='Публичное акционерное общество "Полюс"',
         registrator=REGISTRATOR_LIST[0],
-        reg_codes=['1-01-55192-E']
+        reg_codes=['1-01-55192-E'],
+        code_name='полюс'
     ),
     # 5
     AOobject(
         AOtype='Публичное акционерное общество "Газпром"',
         registrator=REGISTRATOR_LIST[1],
-        reg_codes=['1-02-00028-A']
+        reg_codes=['1-02-00028-A'],
+        code_name='газпром'
     ),
     # 6
     AOobject(
         AOtype='Публичное акционерное общество "Сбербанк России"',
         registrator=REGISTRATOR_LIST[2],
-        reg_codes=['1-03-01481-B', '2-03-01481-B']
+        reg_codes=['1-03-01481-B', '2-03-01481-B'],
+        code_name='сбербанк'
     ),
     # 7
     AOobject(
         AOtype='Ленское золотодобывающее публичное акционерное общество "Лензолото"',
         registrator=REGISTRATOR_LIST[0],
-        reg_codes=['1-02-40433-N', '2-02-40433-N']
+        reg_codes=['1-02-40433-N', '2-02-40433-N'],
+        code_name='лензолото'
     ),
     # 8
     AOobject(
         AOtype='Публичное акционерное общество "Россети Ленэнерго"',
         registrator=REGISTRATOR_LIST[0],
-        reg_codes=['1-01-00073-A', '2-01-00073-A']
+        reg_codes=['1-01-00073-A', '2-01-00073-A'],
+        code_name='ленэнерго'
     ),
     # 9
     AOobject(
         AOtype='Публичное акционерное общество "Территориальная генерирующая компания №1"',
         registrator=REGISTRATOR_LIST[1],
-        reg_codes=['1-01-03388-D']
+        reg_codes=['1-01-03388-D'],
+        code_name='тгк1'
     ),
     # 10
     AOobject(
         AOtype='Публичное акционерное общество энергетики и электрификации "Мосэнерго"',
         registrator=REGISTRATOR_LIST[1],
-        reg_codes=['1-01-00085-A']
+        reg_codes=['1-01-00085-A'],
+        code_name='мосэнерго'
     ),
 ]
