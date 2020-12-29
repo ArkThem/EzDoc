@@ -128,7 +128,7 @@ class StockParagraph:
 
         input_data = input("Либо номер из списка, либо название АО, которого нет.\n")
         try:
-            self.AO = AO_LIST[int(input_data)]
+            self.AO = AO_LIST[int(input_data)-1]
             # self.add({'#!AOtype!#': self.AO.name})
             self.customAO = False
         except ValueError:
