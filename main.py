@@ -65,6 +65,7 @@ for stock_variant in paragraphs:
     current_case_dict = merge_two_dicts(fill_data.token_book, stock_variant.token_book)
     anketa_path, rasp_path = stock_variant.AO.registrator.documents
     reg_name = stock_variant.AO.code_name
+    stock_type = stock_variant.stock_type
     font_settings = stock_variant.AO.registrator.font_parameters
 
 
@@ -77,7 +78,7 @@ for stock_variant in paragraphs:
 
     with alive_bar(len(anketa.paragraphs)) as bar_anketa:
         doc_dict_replace(anketa, current_case_dict, style=style_anketa, bar=bar_anketa)
-    anketa.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} АНКЕТА {reg_name}.docx"))
+    anketa.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} АНКЕТА {reg_name} {stock_type}.docx"))
     del anketa
     del style_anketa
     del font_anketa
@@ -91,7 +92,7 @@ for stock_variant in paragraphs:
     with alive_bar(len(rasp.paragraphs)) as bar_raspor:
         doc_dict_replace(rasp, current_case_dict, style=style_rasp, bar=bar_raspor)
 
-    rasp.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} РАСПОРЯЖЕНИЕ {reg_name}.docx"))
+    rasp.save(os.path.join(SAVE_PATH, f"{fill_data.token_book['#!fio_initials!#']} РАСПОРЯЖЕНИЕ {reg_name} {stock_type}.docx"))
     del rasp
     del style_rasp
     del font_rasp
